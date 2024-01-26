@@ -142,11 +142,16 @@ def resetGame():
     os.startfile("C:/Users/Thuy/OneDrive/Máy tính/JackalSquad.lnk")
     time.sleep(30)
 
+    startWaitMain = time.time()
     while True:
+        curTime = time.time()
+        if curTime - startWaitMain > 90:
+            return False
         screen = takeScreenShot()
         xPos = findImage(xImg, screen)
         tl = findImage(xangsangImg, screen, 1)
         if len(xPos) > 0 or len(tl) > 0:
+            time.sleep(4)
             break
         time.sleep(2)
     for i in range (4):
@@ -169,7 +174,7 @@ def resetGame():
     screen = takeScreenShot()
     prevPos = findImage(previousImg, screen)
     if(len(prevPos) == 0):
-        return
+        return False
 
     for i in range(50):
         screen = takeScreenShot()
@@ -181,6 +186,7 @@ def resetGame():
         else:
             click(prevPos[0][0],prevPos[0][1])
             time.sleep(1)
+    return True
 
 def playGame(_needReset = True):
     global playPostion
@@ -198,9 +204,8 @@ def playGame(_needReset = True):
     xang = 0
 
     while True:
-        if needReset:
+        if needReset and resetGame():
             needReset = False
-            resetGame()
 
         time.sleep(2)
         screen = takeScreenShot()
