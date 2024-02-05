@@ -4,6 +4,7 @@ from mss import mss
 import subprocess
 import time
 import os
+import json
 import win32api, win32con
 from ctypes import windll, Structure, c_long, byref
 
@@ -19,7 +20,7 @@ def getMousePos():
 def click(x,y):
     win32api.SetCursorPos((x,y))
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,x,y,0,0)
-    time.sleep(0.01)
+    time.sleep(0.02)
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,x,y,0,0)
 
 def takeScreenShot():
@@ -115,21 +116,33 @@ def getPosition():
     global stopPostion
     global mainGameRect
     global xangRect
+
+    with open('settingPos.json') as f:
+        settingValue = json.load(f)
+        playPostion = settingValue["playPostion"]
+        stopPostion = settingValue["stopPostion"]
+        mainGameRect = settingValue["mainGameRect"]
+        xangRect = settingValue["xangRect"]
+
     screen = takeScreenShot()
     pl = findImage(playImg, screen)
     if len(pl) > 0:
-        playPostion = pl[0]
+        playPostion = (int(pl[0][0]), int(pl[0][1]))
     st = findImage(stopImg, screen)
     if len(st) > 0:
-        stopPostion = st[0]
+        stopPostion = (int(st[0][0]), int(st[0][1]))
     tl = findImage(xangsangImg, screen, 1)
     if len(tl) == 0:
         tl = findImage(xangtoiImg, screen, 1)
     br = findImage(phaiduoimain, screen, 2)
     if len(tl) > 0 and len(br) > 0:
-        mainGameRect = (tl[0][0], tl[0][1], br[0][0], br[0][1])
+        mainGameRect = (int(tl[0][0]), int(tl[0][1]), int(br[0][0]), int(br[0][1]))
         xangRect = (mainGameRect[0] + 40, mainGameRect[1], mainGameRect[0] + 140, mainGameRect[1] + 40)
     #xangImg = screen[xangRect[1]:xangRect[3], xangRect[0]:xangRect[2]]
+
+    settingValue = {"playPostion": playPostion, "stopPostion":stopPostion, "mainGameRect":mainGameRect, "xangRect":xangRect}
+    with open('settingPos.json', 'w') as f:
+        json.dump(settingValue, f)
 
     print("playPostion", playPostion)
     print("stopPostion", stopPostion)
@@ -203,6 +216,8 @@ def playGame(_needReset = True):
     needReset = _needReset
     xang = 0
 
+    getPosition()
+
     while True:
         if needReset and resetGame():
             needReset = False
@@ -217,6 +232,11 @@ def playGame(_needReset = True):
                 xang = int(xangText.split("/")[0])
             else:
                 xang = 0
+        else:
+            print("xang invalid", xangText)
+            if xang < 20:
+                needReset = True
+                continue
         if xang < 5:
             time.sleep(180)
             click(stopPostion[0], stopPostion[1])
@@ -224,12 +244,15 @@ def playGame(_needReset = True):
 
         xPos = findImage(capdo144Img, screen)
         if len(xPos) == 0:
+            print("Cap do 14-4 invalid")
             needReset = True
             continue
         xPos = findImage(x5vaochoiImg, screen)
         if(len(xPos) > 0):
             click(xPos[0][0],xPos[0][1])
             time.sleep(1)
+        else:
+            print("Vao choi invalid")
 
         time.sleep(10)
         screen = takeScreenShot()
@@ -297,11 +320,7 @@ def playGame(_needReset = True):
                 click(xPos[0][0],xPos[0][1])
                 time.sleep(6)
 
-import sys
-if len(sys.argv) > 1:
-    playGame(False)
-else:
-    playGame(True)
+playGame(False)
 
 '''
 running = True
